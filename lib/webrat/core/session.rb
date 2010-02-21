@@ -201,7 +201,12 @@ For example:
     webrat_deprecate :clicks_link_within, :click_link_within
 
     def within(selector)
-      scopes.push(Scope.from_scope(self, current_scope, selector))
+      case selector
+      when String
+        scopes.push(Scope.from_scope(self, current_scope, selector))
+      when Nokogiri::HTML::Document, Nokogiri::XML::NodeSet, Nokogiri::XML::Element
+        scopes.push(Scope.from_page(self, selector, selector.to_s))
+      end
       ret = yield(current_scope)
       scopes.pop
       return ret

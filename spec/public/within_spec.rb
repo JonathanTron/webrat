@@ -174,4 +174,92 @@ describe "within" do
       end
     }.should raise_error(Webrat::NotFoundError)
   end
+
+  it "should work with xpath" do
+    with_html <<-HTML
+      <html>
+      <div>
+        <a href="/page1">Link</a>
+      </div>
+      <div id="container">
+        <div><a href="/page2">Link</a></div>
+      </div>
+      </html>
+    HTML
+
+    webrat_session.should_receive(:get).with("/page2", {})
+    within "//div[@id='container']" do
+      click_link "Link"
+    end
+  end
+
+  it "should work with Nokogiri::HTML::Document" do
+    with_html <<-HTML
+      <html>
+      <div>
+        <a href="/page1">Link</a>
+      </div>
+      <div id="container">
+        <div><a href="/page2">Link</a></div>
+      </div>
+      </html>
+    HTML
+
+    doc = Nokogiri::HTML::Document.parse <<-HTML
+      <div id="container">
+        <div><a href="/page2">Link</a></div>
+      </div>
+    HTML
+
+    webrat_session.should_receive(:get).with("/page2", {})
+    within doc do
+      click_link "Link"
+    end
+  end
+
+  it "should work with Nokogiri::XML::Element" do
+    with_html <<-HTML
+      <html>
+      <div>
+        <a href="/page1">Link</a>
+      </div>
+      <div id="container">
+        <div><a href="/page2">Link</a></div>
+      </div>
+      </html>
+    HTML
+
+    doc = Nokogiri::XML::Document.parse webrat_session.response_body
+    node = doc.xpath("//div[@id='container']").first
+
+    webrat_session.should_receive(:get).with("/page2", {})
+    within node do
+      click_link "Link"
+    end
+  end
+
+  it "should work with Nokogiri::XML::NodeSet" do
+    with_html <<-HTML
+      <html>
+      <div>
+        <a href="/page1">Link</a>
+      </div>
+      <div id="container" class="container">
+        <div><a href="/page2">Link</a></div>
+      </div>
+      <div id="container_1" class="container">
+        <div><a href="/page3">Link</a></div>
+      </div>
+      </html>
+    HTML
+
+    doc = Nokogiri::XML::Document.parse webrat_session.response_body
+    node_set = doc.xpath("//div[@class='container']")
+
+    webrat_session.should_receive(:get).with("/page2", {})
+    within node_set do
+      click_link "Link"
+    end
+  end
+
 end
